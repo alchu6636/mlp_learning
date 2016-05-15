@@ -4,9 +4,10 @@ import numpy.random as npr
 import chainer
 import data
 
-from mlp_learning import MlpLearning, MnistData, Trainer
+from mlp_learning import MlpLearning, MnistData, Trainer, BatchLoop
+from mlp_learning import TrainerQuiet, BatchLoopQuiet
 
-RandomSeed = 53269
+RandomSeed = 53269 #for regression test
 
 class TestMlpLearning(unittest.TestCase):
     def test_init(self):
@@ -164,15 +165,16 @@ class TestMlpLearning(unittest.TestCase):
         self.assertEqual(mlp.units(), [784,100,100,10])
 
     def test_trainer(self):
-        trainer = Trainer(MnistData())
+        trainer = TrainerQuiet(MnistData())
         mlp = trainer.create_mlp([112, 112])
         self.assertEqual(mlp.units(), [784, 112, 112, 10])
         trainer.setup(epoch=4, training=200, test=25, batch=15)
         trainer.learn(mlp)
-        self.assertGreater(trainer.train_accuracy[-1], 0.85)
-        self.assertLessEqual(trainer.train_accuracy[-1], 1.0)
-        self.assertGreater(trainer.test_accuracy[-1], 0.85)
-        self.assertLessEqual(trainer.test_accuracy[-1], 1.0)
+        self.assertAlmostEqual(trainer.train_accuracy[-1], 0.9000000059604645)
+        self.assertAlmostEqual(trainer.test_accuracy[-1], 0.880000007153)
+
+    def test_batch_loop(self):
+        loop = BatchLoop()
 
 if __name__ == '__main__':
     unittest.main()

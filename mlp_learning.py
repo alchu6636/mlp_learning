@@ -86,9 +86,19 @@ class Trainer(object):
         self.mlp = MlpLearning([l0] + hidden_nunits + [lz])
         return self.mlp
 
+    def output_parameters(self):
+        print('#layer:{}'.format(self.mlp.units()))
+        #print('#total W:{}'.format(self.mlp.n_parameter_w()))
+        #print('#total b:{}'.format(self.mlp.n_parameter_b()))
+        print('#epoch:{}'.format(self.n_epoch))
+        print('#training data:{}'.format(self.n_training))
+        #print('#validation data:{}'.format("0"))
+        print('#test data:{}'.format(self.n_test))
+        print('#batch size:{}'.format(self.n_batch))
+        #print('#dropout:{}'.format("No"))
 
     def learn(self, mlp):
-        
+        self.output_parameters()
         x_train, y_train = self._data.take(self.n_training)
         x_test, y_test = self._data.take(self.n_test)
         model = chainer.links.Classifier(mlp)
@@ -103,35 +113,72 @@ class Trainer(object):
             self.test(model, x_test, y_test)
 
     def training(self, optimizer, model, x_train, y_train):
-        sum_loss = 0
-        sum_accuracy = 0
-        start = time.time()
+        loss_accu = self.batch_loop()
         perm = np.random.permutation(self.n_training)
         for i in range(0, self.n_training, self.n_batch):
             x = chainer.Variable(np.asarray(x_train[perm[i:i+self.n_batch]]))
             t = chainer.Variable(np.asarray(y_train[perm[i:i+self.n_batch]]))
             optimizer.update(model, x, t)
-            sum_loss += float(model.loss.data) * len(t.data)
-            sum_accuracy += float(model.accuracy.data) * len(t.data)
-        self.train_loss.append(sum_loss / self.n_training)
-        self.train_accuracy.append(sum_accuracy / self.n_training)
-        print('train mean loss={}, accuracy={}, elapsed time={} sec'.format(
-            sum_loss / self.n_training, sum_accuracy / self.n_training,
-            time.time() - start))
+            loss_accu.update(model.loss.data, model.accuracy.data, len(t.data))
+        self.train_loss.append(loss_accu.loss_mean())
+        self.train_accuracy.append(loss_accu.accuracy_mean())
+        loss_accu.output('train mean')
 
     def test(self, model, x_test, y_test):
-        sum_loss = 0
-        sum_accuracy = 0
+        loss_accu = self.batch_loop()
         for i in range(0, self.n_test, self.n_batch):
             x = chainer.Variable(np.asarray(x_test[i:i+self.n_batch]),
                                  volatile='on')
             t = chainer.Variable(np.asarray(y_test[i:i+self.n_batch]),
                                  volatile='on')
             model(x, t)
-            sum_loss += float(model.loss.data) * len(t.data)
-            sum_accuracy += float(model.accuracy.data) * len(t.data)
-        self.test_loss.append(sum_loss / self.n_test)
-        self.test_accuracy.append(sum_accuracy / self.n_test)
+            loss_accu.update(model.loss.data, model.accuracy.data, len(t.data))
+        self.test_loss.append(loss_accu.loss_mean())
+        self.test_accuracy.append(loss_accu.accuracy_mean())
+        loss_accu.output('test mean')
 
-        print('test mean loss={}, accuracy={}'.format(
-            sum_loss / self.n_test, sum_accuracy / self.n_test))
+    def batch_loop(self):
+        return BatchLoop()
+
+class TrainerQuiet(Trainer):
+    def __init__(self, data):
+        super(TrainerQuiet, self).__init__(data)
+
+    def batch_loop(self):
+        return BatchLoopQuiet()
+
+    def output_parameters(self):
+        pass
+
+class BatchLoop(object):
+    def __init__(self):
+        self._loss = 0
+        self._accuracy = 0
+        self._size = 0
+        self._start = time.time()
+
+    def update(self, loss, accuracy, size):
+        self._loss += float(loss) * size
+        self._accuracy += float(accuracy) * size
+        self._size += size
+
+    def loss_mean(self):
+        return self._loss / self._size
+
+    def accuracy_mean(self):
+        return self._accuracy / self._size
+
+    def elapse_time(self):
+        return self._start / time.time()
+
+    def output(self, header):
+        print('{} loss={}, accuracy={}, elapsed_time={}'.format(
+            header, self._loss/self._size, self._accuracy/self._size,
+            self.elapse_time()))
+
+class BatchLoopQuiet(BatchLoop):
+    def __init__(self):
+        super(BatchLoopQuiet, self).__init__()
+
+    def output(self, header):
+        pass
