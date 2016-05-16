@@ -8,6 +8,7 @@ from chainer import Link, Chain, ChainList
 import chainer.functions as F
 import chainer.links as L
 import data
+import argparse
 
 class MlpLearning(ChainList):
     def __init__(self, units):
@@ -91,9 +92,9 @@ class Trainer(object):
         #print('#total W:{}'.format(self.mlp.n_parameter_w()))
         #print('#total b:{}'.format(self.mlp.n_parameter_b()))
         print('#epoch:{}'.format(self.n_epoch))
-        print('#training data:{}'.format(self.n_training))
+        print('#training data size:{}'.format(self.n_training))
         #print('#validation data:{}'.format("0"))
-        print('#test data:{}'.format(self.n_test))
+        print('#test data size:{}'.format(self.n_test))
         print('#batch size:{}'.format(self.n_batch))
         #print('#dropout:{}'.format("No"))
 
@@ -169,7 +170,7 @@ class BatchLoop(object):
         return self._accuracy / self._size
 
     def elapse_time(self):
-        return self._start / time.time()
+        return time.time() - self._start
 
     def output(self, header):
         print('{} loss={}, accuracy={}, elapsed_time={}'.format(
@@ -182,3 +183,34 @@ class BatchLoopQuiet(BatchLoop):
 
     def output(self, header):
         pass
+
+def get_args():
+    parser = argparse.ArgumentParser(
+        description='Solving MNIST by Multi Layer Perseptron')
+#    parser.add_argument('--initmodel', '-m', default='',
+#                        help='Initialize the model from given file')
+#    parser.add_argument('--resume', '-r', default='',
+#                        help='Resume the optimization from snapshot')
+    parser.add_argument('--epoch', '-e', default=4, type=int,
+                        help='number of epochs to learn')
+    parser.add_argument('--batchsize', '-b', type=int, default=100,
+                        help='learning minibatch size')
+    parser.add_argument('--unit', '-u', type=int, nargs='+',
+                        help='number of units')
+    parser.add_argument('--trainingsize', '-t', type=int, default=1000,
+                        help='training data size')
+    parser.add_argument('--testsize', type=int, default=100,
+                        help='test data size')
+    return parser.parse_args()
+
+if __name__ == '__main__':
+    args = get_args()
+    trainer = Trainer(MnistData())
+    trainer.setup(
+        epoch = args.epoch, batch = args.batchsize, 
+        training = args.trainingsize, test = args.testsize)
+    if args.unit:
+        mlp = trainer.create_mlp(args.unit)
+    else:
+        mlp = trainer.create_mlp([112,112])
+    trainer.learn(mlp)
