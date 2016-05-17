@@ -204,7 +204,7 @@ class BatchLoop(object):
         return time.time() - self._start
 
     def output(self, header):
-        print('{} loss={}, accuracy={}, elapsed_time={}'.format(
+        print('{} loss={}, accuracy={}, elapsed_time={:.1f}'.format(
             header, self._loss/self._size, self._accuracy/self._size,
             self.elapse_time()))
 
