@@ -29,6 +29,13 @@ class MlpLearning(ChainList):
         u.append(len(self[i].W.data))
         return u
 
+    def nparam(self):
+        unitlist = self.units()
+        sum = 0
+        for i in range(len(unitlist)-1):
+            sum += (unitlist[i]+1) * unitlist[i+1]
+        return sum
+
     def norm(self):
         return map(lambda x: np.linalg.norm(x.W.data), self)
 
@@ -89,6 +96,7 @@ class Trainer(object):
 
     def output_parameters(self):
         print('#layer:{}'.format(self.mlp.units()))
+        print('#number of parameters:{}'.format(self.mlp.nparam()))
         #print('#total W:{}'.format(self.mlp.n_parameter_w()))
         #print('#total b:{}'.format(self.mlp.n_parameter_b()))
         print('#epoch:{}'.format(self.n_epoch))
@@ -197,9 +205,9 @@ def get_args():
                         help='learning minibatch size')
     parser.add_argument('--unit', '-u', type=int, nargs='+',
                         help='number of units')
-    parser.add_argument('--trainingsize', '-t', type=int, default=1000,
+    parser.add_argument('--trainingsize', '-t', type=int, default=60000,
                         help='training data size')
-    parser.add_argument('--testsize', type=int, default=100,
+    parser.add_argument('--testsize', type=int, default=10000,
                         help='test data size')
     return parser.parse_args()
 

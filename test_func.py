@@ -21,13 +21,15 @@ class TestMlpLearning(unittest.TestCase):
         output = output[:len(head)]
         self.assertEqual(output, head)
 
-    def test_null(self):
-        output = self.cmdline("")
-        self.assertTrue(output.find("epoch:") >= 0)
-
-    def test_epoch(self):
+    def test_default(self):
         output = self.cmdline("--epoch 0")
         self.assertTrue(output.find("epoch:0") >= 0)
+        self.assertTrue(output.find("#layer:[784, 112, 112, 10]") >= 0)
+        self.assertTrue(output.find("#number of parameters:101706") >= 0)
+        self.assertTrue(output.find("#training data size:60000") >= 0)
+        self.assertTrue(output.find("#test data size:10000") >= 0)
+        self.assertTrue(output.find("#batch size:100") >= 0)
+        
         self.assertEqual(output.find("test mean"), -1)
 
     def test_training_size(self):
@@ -37,6 +39,11 @@ class TestMlpLearning(unittest.TestCase):
     def test_test_size(self):
         output = self.cmdline("--epoch 0 --testsize 100")
         self.assertTrue(output.find("test data size:100") >= 0)
+        
+    def test_layer(self):
+        output = self.cmdline("--epoch 0 --unit 100 80")
+        self.assertTrue(output.find("layer:[784, 100, 80, 10]") >= 0)
+        self.assertTrue(output.find("number of parameters:87390") >= 0)
         
 if __name__ == '__main__':
     unittest.main()
