@@ -1,6 +1,7 @@
 
 import unittest
 from subprocess import Popen, PIPE
+import os
 
 import numpy as np
 import numpy.random as npr
@@ -44,6 +45,33 @@ class TestMlpLearning(unittest.TestCase):
         output = self.cmdline("--epoch 0 --unit 100 80")
         self.assertTrue(output.find("layer:[784, 100, 80, 10]") >= 0)
         self.assertTrue(output.find("number of parameters:87390") >= 0)
-        
+
+    def test_save_model(self):
+        self.cmdline("--epoch 1 --training 1000 --test 100")
+        model = open("mlp.model","r")
+        model.close()
+        state = open("mlp.state", "r")
+        state.close()
+        os.remove("mlp.model")
+        os.remove("mlp.state")
+
+    def train_accuracy(self, log):
+        lines = log.split('\n')
+        accuracy = []
+        for l in lines:
+            if l.find('train mean') == 0:
+                for item in l.split(' '):
+                    if item.find('accuracy=') == 0:
+                        accuracy.append(float(item[len('accuracy='):].strip(',')))
+        return accuracy[-1]
+
+    def test_initmodel(self):
+        result = self.cmdline("--epoch 1 --training 1000 --test 100")
+        accuracy = self.train_accuracy(result)
+        self.assertLess(accuracy, 0.5)
+        result = self.cmdline("--epoch 1 --training 1000 --test 100 --initmodel mlp.model")
+        accuracy = self.train_accuracy(result)
+        self.assertGreater(accuracy, 0.5)
+
 if __name__ == '__main__':
     unittest.main()

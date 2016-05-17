@@ -70,8 +70,9 @@ class MnistData(object):
         return max(self._data['target'])+1
 
 class Trainer(object):
-    def __init__(self, data):
+    def __init__(self, data, args):
         self._data = data
+        self._args = args
         self.n_epoch = 4
         self.n_training = 200
         self.n_test = 25
@@ -113,6 +114,8 @@ class Trainer(object):
         model = chainer.links.Classifier(mlp)
         optimizer = chainer.optimizers.Adam()
         optimizer.setup(model)
+        self.load_model(model)
+        self.load_state(optimizer)
         self.train_loss = []
         self.train_accuracy = []
         self.test_loss = []
@@ -120,6 +123,16 @@ class Trainer(object):
         for e in range(self.n_epoch):
             self.training(optimizer, model, x_train, y_train)
             self.test(model, x_test, y_test)
+        self.save_model_state(model, optimizer)
+
+    def load_model(self, model):
+        if self._args.initmodel:
+            print '****{}****'.format(self._args.initmodel)
+            serializers.load_npz(self._args.initmodel, model)
+
+    def load_state(self, optimizer):
+        if self._args.resume:
+            serializers.load_npz(self._args.resume, optimizer)
 
     def training(self, optimizer, model, x_train, y_train):
         loss_accu = self.batch_loop()
@@ -146,6 +159,13 @@ class Trainer(object):
         self.test_accuracy.append(loss_accu.accuracy_mean())
         loss_accu.output('test mean')
 
+    def save_model_state(self, model, optimizer):
+        serializers.save_npz('mlp.model', model)
+        serializers.save_npz('mlp.state', optimizer)
+
+    def output_save_model(self):
+        print('save the model and state')
+
     def batch_loop(self):
         return BatchLoop()
 
@@ -157,6 +177,9 @@ class TrainerQuiet(Trainer):
         return BatchLoopQuiet()
 
     def output_parameters(self):
+        pass
+
+    def output_save_model(self):
         pass
 
 class BatchLoop(object):
@@ -195,10 +218,10 @@ class BatchLoopQuiet(BatchLoop):
 def get_args():
     parser = argparse.ArgumentParser(
         description='Solving MNIST by Multi Layer Perseptron')
-#    parser.add_argument('--initmodel', '-m', default='',
-#                        help='Initialize the model from given file')
-#    parser.add_argument('--resume', '-r', default='',
-#                        help='Resume the optimization from snapshot')
+    parser.add_argument('--initmodel', '-m', default='',
+                        help='Initialize the model from given file')
+    parser.add_argument('--resume', '-r', default='',
+                        help='Resume the optimization from snapshot')
     parser.add_argument('--epoch', '-e', default=4, type=int,
                         help='number of epochs to learn')
     parser.add_argument('--batchsize', '-b', type=int, default=100,
@@ -213,7 +236,7 @@ def get_args():
 
 if __name__ == '__main__':
     args = get_args()
-    trainer = Trainer(MnistData())
+    trainer = Trainer(MnistData(), args)
     trainer.setup(
         epoch = args.epoch, batch = args.batchsize, 
         training = args.trainingsize, test = args.testsize)
