@@ -78,11 +78,14 @@ class Trainer(object):
         self.n_test = 25
         self.n_batch = 15
         self.mlp = None
+        self.init_loss_accu()
+
+    def init_loss_accu(self):
         self.train_loss = []
         self.train_accuracy = []
         self.test_loss = []
-        self.test_accuracy = []        
-
+        self.test_accuracy = []
+        
     def setup(self, epoch=4, training=200, test=25, batch=15):
         self.n_epoch = epoch
         self.n_training = training
@@ -134,22 +137,15 @@ class Trainer(object):
         self.learn(mlp)
 
     def learn(self, mlp):
-        model = self.get_model(mlp)
-        optimizer = self.get_optimizer(model)
-
-        self.output_parameters()
         x_train, y_train = self._data.take(self.n_training)
         x_test, y_test = self._data.take(self.n_test)
-
-        self.train_loss = []
-        self.train_accuracy = []
-        self.test_loss = []
-        self.test_accuracy = []
-        
+        model = self.get_model(mlp)
+        optimizer = self.get_optimizer(model)
+        self.output_parameters()
+        self.init_loss_accu()
         for e in range(self.n_epoch):
             self.training(optimizer, model, x_train, y_train)
-            self.test(model, x_test, y_test)
-        
+            accu = self.test(model, x_test, y_test)
         self.save_model_state(model, optimizer)
 
     def load_model(self, model):
@@ -185,6 +181,7 @@ class Trainer(object):
         self.test_loss.append(loss_accu.loss_mean())
         self.test_accuracy.append(loss_accu.accuracy_mean())
         loss_accu.output('test mean')
+        return loss_accu.accuracy_mean()
 
     def save_model_state(self, model, optimizer):
         serializers.save_npz('mlp.model', model)
