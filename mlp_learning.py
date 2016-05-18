@@ -262,7 +262,7 @@ def get_args():
     return parser.parse_args()
 
 if __name__ == '__main__':
-    args = get_args()
+    main_args = get_args()
     dataset = MnistData()
-    trainer = Trainer(dataset, args)
+    trainer = Trainer(dataset, main_args)
     trainer.do()
