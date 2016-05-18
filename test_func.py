@@ -8,10 +8,10 @@ import numpy.random as npr
 import chainer
 import data
 
-from mlp_learning import MlpLearning, MnistData, Trainer, BatchLoop
+from mlp_learning import MlpNet, MnistData, Trainer, BatchLoop
 from mlp_learning import TrainerQuiet, BatchLoopQuiet
 
-class TestMlpLearning(unittest.TestCase):
+class TestMlpNet(unittest.TestCase):
     def cmdline(self, arg_string):
         commands = ("python mlp_learning.py "+arg_string).split()
         return Popen(commands, stdout=PIPE).communicate()[0]

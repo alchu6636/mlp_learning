@@ -10,9 +10,9 @@ import chainer.links as L
 import data
 import argparse
 
-class MlpLearning(ChainList):
+class MlpNet(ChainList):
     def __init__(self, units):
-        super(MlpLearning, self).__init__()
+        super(MlpNet, self).__init__()
         if len(units) < 3:
             raise ValueError('units must be equal or over 3 layers')
         for (a, b) in zip(units[:-1], units[1:]):
@@ -92,7 +92,7 @@ class Trainer(object):
     def create_mlp(self, hidden_nunits):
         l0 = self._data.x_dimension()
         lz = self._data.y_range()
-        self.mlp = MlpLearning([l0] + hidden_nunits + [lz])
+        self.mlp = MlpNet([l0] + hidden_nunits + [lz])
         return self.mlp
 
     def output_parameters(self):
@@ -107,15 +107,38 @@ class Trainer(object):
         print('#batch size:{}'.format(self.n_batch))
         #print('#dropout:{}'.format("No"))
 
+    def get_mlp(self, units):
+        if units:
+            mlp = self.create_mlp(units)
+        else:
+            mlp = self.create_mlp([112,112])
+        return mlp
+
+    def get_model(self, mlp):
+        model = chainer.links.Classifier(mlp)
+        self.load_model(model)
+        return model
+
+    def get_optimizer(self, model):
+        optimizer = chainer.optimizers.Adam()
+        optimizer.setup(model)
+        self.load_state(optimizer)
+        return optimizer
+
+    def do(self):
+        mlp = self.get_mlp(args.unit)
+        self.setup(
+            epoch = args.epoch, batch = args.batchsize, 
+            training = args.trainingsize, test = args.testsize)
+        self.learn(mlp)
+
     def learn(self, mlp):
+        model = self.get_model(mlp)
+        optimizer = self.get_optimizer(model)
+
         self.output_parameters()
         x_train, y_train = self._data.take(self.n_training)
         x_test, y_test = self._data.take(self.n_test)
-        model = chainer.links.Classifier(mlp)
-        optimizer = chainer.optimizers.Adam()
-        optimizer.setup(model)
-        self.load_model(model)
-        self.load_state(optimizer)
         self.train_loss = []
         self.train_accuracy = []
         self.test_loss = []
@@ -126,12 +149,12 @@ class Trainer(object):
         self.save_model_state(model, optimizer)
 
     def load_model(self, model):
-        if self._args.initmodel:
+        if 'initmodel' in self._args and self._args.initmodel:
             print '****{}****'.format(self._args.initmodel)
             serializers.load_npz(self._args.initmodel, model)
 
     def load_state(self, optimizer):
-        if self._args.resume:
+        if 'resume' in self._args and self._args.resume:
             serializers.load_npz(self._args.resume, optimizer)
 
     def training(self, optimizer, model, x_train, y_train):
@@ -170,8 +193,8 @@ class Trainer(object):
         return BatchLoop()
 
 class TrainerQuiet(Trainer):
-    def __init__(self, data):
-        super(TrainerQuiet, self).__init__(data)
+    def __init__(self, data, args):
+        super(TrainerQuiet, self).__init__(data, args)
 
     def batch_loop(self):
         return BatchLoopQuiet()
@@ -237,11 +260,4 @@ def get_args():
 if __name__ == '__main__':
     args = get_args()
     trainer = Trainer(MnistData(), args)
-    trainer.setup(
-        epoch = args.epoch, batch = args.batchsize, 
-        training = args.trainingsize, test = args.testsize)
-    if args.unit:
-        mlp = trainer.create_mlp(args.unit)
-    else:
-        mlp = trainer.create_mlp([112,112])
-    trainer.learn(mlp)
+    trainer.do()

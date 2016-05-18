@@ -4,42 +4,42 @@ import numpy.random as npr
 import chainer
 import data
 
-from mlp_learning import MlpLearning, MnistData, Trainer, BatchLoop
+from mlp_learning import MlpNet, MnistData, Trainer, BatchLoop
 from mlp_learning import TrainerQuiet, BatchLoopQuiet
 
 RandomSeed = 53269 #for regression test
 
-class TestMlpLearning(unittest.TestCase):
+class TestMlpNet(unittest.TestCase):
     def test_init(self):
         with self.assertRaises(TypeError):
-            a = MlpLearning(0,1,2)
+            a = MlpNet(0,1,2)
 
     def test_init2(self):
-        mlp = MlpLearning([5,3,2])
+        mlp = MlpNet([5,3,2])
 
     def test_init3(self):
         with self.assertRaises(ValueError):
-            mlp = MlpLearning([3,2])
+            mlp = MlpNet([3,2])
 
     def test_init4(self):
         with self.assertRaises(ValueError):
-            mlp = MlpLearning([10,-1,10])
+            mlp = MlpNet([10,-1,10])
 
     def test_init5(self):
         with self.assertRaises(ZeroDivisionError):
-            mlp = MlpLearning([10,0,10])
+            mlp = MlpNet([10,0,10])
 
     def test_layer_len1(self):
-        mlp = MlpLearning([5,3,4])
+        mlp = MlpNet([5,3,4])
         self.assertEqual(len(mlp), 2)
 
     def test_layer_len2(self):
-        mlp = MlpLearning([10,5,5,10])
+        mlp = MlpNet([10,5,5,10])
         self.assertEqual(len(mlp), 3)
 
     def test_norm(self):
         npr.seed(RandomSeed)
-        mlp = MlpLearning([5, 5, 5])
+        mlp = MlpNet([5, 5, 5])
         self.assertEqual(len(mlp.norm()), 2)
         self.assertAlmostEqual(mlp.norm()[0], 2.1161823)
         self.assertAlmostEqual(mlp.norm()[1], 1.6219993)
@@ -48,7 +48,7 @@ class TestMlpLearning(unittest.TestCase):
         npr.seed(RandomSeed)
         x_data = np.array(npr.randn(1, 3), dtype=np.float32)
         x = chainer.Variable(x_data)
-        mlp = MlpLearning([3,2,4])
+        mlp = MlpNet([3,2,4])
         mlp.zerograds()
         y = mlp.forward(x)
         self.assertAlmostEqual(np.linalg.norm(y.data), 1.6243998)
@@ -84,7 +84,7 @@ class TestMlpLearning(unittest.TestCase):
         mnist = self.load_mnist_binary_data()
         x = chainer.Variable(np.asarray(mnist['data'][:N]))
         t = chainer.Variable(np.asarray(mnist['target'][:N]))
-        mlp = MlpLearning([784,100,100,10])
+        mlp = MlpNet([784,100,100,10])
         model = chainer.links.Classifier(mlp)
         loss = model(x, t)
         sum_loss = float(loss.data)
@@ -98,7 +98,7 @@ class TestMlpLearning(unittest.TestCase):
         mnist = self.load_mnist_binary_data()
         x = chainer.Variable(np.asarray(mnist['data'][:N]))
         t = chainer.Variable(np.asarray(mnist['target'][:N]))
-        mlp = MlpLearning([784,100,100,10])
+        mlp = MlpNet([784,100,100,10])
         model = chainer.links.Classifier(mlp)
         optimizer = chainer.optimizers.Adam()
         optimizer.setup(model)
@@ -123,7 +123,7 @@ class TestMlpLearning(unittest.TestCase):
         mnist = MnistData()
         x_train, y_train = mnist.take(TrainSize)
         x_test, y_test = mnist.take(TestSize)
-        mlp = MlpLearning([784,100,100,10])
+        mlp = MlpNet([784,100,100,10])
         model = chainer.links.Classifier(mlp)
         optimizer = chainer.optimizers.Adam()
         optimizer.setup(model)
@@ -161,11 +161,12 @@ class TestMlpLearning(unittest.TestCase):
         self.assertEqual(mnist.y_range(), 10)
 
     def test_mlp_units(self):
-        mlp = MlpLearning([784,100,100,10])
+        mlp = MlpNet([784,100,100,10])
         self.assertEqual(mlp.units(), [784,100,100,10])
 
     def test_trainer(self):
-        trainer = TrainerQuiet(MnistData())
+        args = {}
+        trainer = TrainerQuiet(MnistData(), args)
         mlp = trainer.create_mlp([112, 112])
         self.assertEqual(mlp.units(), [784, 112, 112, 10])
         trainer.setup(epoch=4, training=200, test=25, batch=15)
