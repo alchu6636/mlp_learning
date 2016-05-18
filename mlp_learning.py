@@ -126,10 +126,11 @@ class Trainer(object):
         return optimizer
 
     def do(self):
-        mlp = self.get_mlp(args.unit)
+        args = self._args
         self.setup(
             epoch = args.epoch, batch = args.batchsize, 
             training = args.trainingsize, test = args.testsize)
+        mlp = self.get_mlp(args.unit)
         self.learn(mlp)
 
     def learn(self, mlp):
@@ -139,13 +140,16 @@ class Trainer(object):
         self.output_parameters()
         x_train, y_train = self._data.take(self.n_training)
         x_test, y_test = self._data.take(self.n_test)
+
         self.train_loss = []
         self.train_accuracy = []
         self.test_loss = []
         self.test_accuracy = []
+        
         for e in range(self.n_epoch):
             self.training(optimizer, model, x_train, y_train)
             self.test(model, x_test, y_test)
+        
         self.save_model_state(model, optimizer)
 
     def load_model(self, model):
@@ -259,5 +263,6 @@ def get_args():
 
 if __name__ == '__main__':
     args = get_args()
-    trainer = Trainer(MnistData(), args)
+    dataset = MnistData()
+    trainer = Trainer(dataset, args)
     trainer.do()
