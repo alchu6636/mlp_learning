@@ -170,9 +170,9 @@ class TestMlpNet(unittest.TestCase):
         mlp = trainer.create_mlp([112, 112])
         self.assertEqual(mlp.units(), [784, 112, 112, 10])
         trainer.setup(epoch=4, training=200, test=25, batch=15)
-        trainer.learn(mlp)
-        self.assertAlmostEqual(trainer.train_accuracy[-1], 0.9000000059604645)
-        self.assertAlmostEqual(trainer.test_accuracy[-1], 0.880000007153)
+        trainer.learn()
+        self.assertAlmostEqual(trainer.train_accuracy[-1], 0.92)
+        self.assertAlmostEqual(trainer.test_accuracy[-1], 0.88)
 
     def test_batch_loop(self):
         loop = BatchLoop()

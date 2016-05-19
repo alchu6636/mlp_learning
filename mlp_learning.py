@@ -73,10 +73,7 @@ class Trainer(object):
     def __init__(self, data, args):
         self._data = data
         self._args = args
-        self.n_epoch = 4
-        self.n_training = 200
-        self.n_test = 25
-        self.n_batch = 15
+        self.setup()
         self.mlp = None
         self.init_loss_accu()
 
@@ -110,7 +107,7 @@ class Trainer(object):
         print('#batch size:{}'.format(self.n_batch))
         #print('#dropout:{}'.format("No"))
 
-    def get_mlp(self, units):
+    def get_mlp(self, units=None):
         if units:
             mlp = self.create_mlp(units)
         else:
@@ -128,15 +125,16 @@ class Trainer(object):
         self.load_state(optimizer)
         return optimizer
 
-    def do(self):
+    def learn(self):
         args = self._args
-        self.setup(
-            epoch = args.epoch, batch = args.batchsize, 
-            training = args.trainingsize, test = args.testsize)
-        mlp = self.get_mlp(args.unit)
-        self.learn(mlp)
+        if args:
+            self.setup(
+                epoch = args.epoch, batch = args.batchsize, 
+                training = args.trainingsize, test = args.testsize)
+            mlp = self.get_mlp(args.unit)
+        else:
+            mlp = self.get_mlp()
 
-    def learn(self, mlp):
         x_train, y_train = self._data.take(self.n_training)
         x_test, y_test = self._data.take(self.n_test)
         model = self.get_model(mlp)
@@ -262,4 +260,4 @@ if __name__ == '__main__':
     main_args = get_args()
     dataset = MnistData()
     trainer = Trainer(dataset, main_args)
-    trainer.do()
+    trainer.learn()
