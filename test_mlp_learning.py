@@ -50,7 +50,7 @@ class TestMlpNet(unittest.TestCase):
         x = chainer.Variable(x_data)
         mlp = MlpNet([3,2,4])
         mlp.zerograds()
-        y = mlp.forward(x)
+        y = mlp(x)
         self.assertAlmostEqual(np.linalg.norm(y.data), 1.6243998)
         y.grad = np.ones((1,4), dtype=np.float32)
         y.backward()

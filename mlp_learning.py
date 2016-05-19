@@ -39,15 +39,12 @@ class MlpNet(ChainList):
     def norm(self):
         return map(lambda x: np.linalg.norm(x.W.data), self)
 
-    def forward(self, input):
+    def __call__(self, input): # forward
         h = input
         for i in range(self.layer_size()-1):
             h = F.relu(self[i](h))
 #            h = F.dropout(F.relu(self[i](h)), train= not input.volatile)
         return self[-1](h)
-
-    def __call__(self, input):
-        return self.forward(input)
 
 class MnistData(object):
     def __init__(self):
