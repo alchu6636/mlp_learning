@@ -138,9 +138,11 @@ class Trainer(object):
         optimizer = self.get_optimizer(model)
         self.output_parameters()
         self.init_loss_accu()
+        start = time.time()
         for e in range(self.n_epoch):
             self.training(optimizer, model, x_train, y_train)
             accu = self.test(model, x_test, y_test)
+        self.output_time(time.time() - start)
         self.save_model_state(model, optimizer)
 
     def load_model(self, model):
@@ -182,6 +184,9 @@ class Trainer(object):
         serializers.save_npz('mlp.model', model)
         serializers.save_npz('mlp.state', optimizer)
 
+    def output_time(self, second):
+        print('#total elapsed time {:.1f} minitues'.format(second/60))
+
     def output_save_model(self):
         print('save the model and state')
 
@@ -199,6 +204,9 @@ class TrainerQuiet(Trainer):
         pass
 
     def output_save_model(self):
+        pass
+
+    def output_time(self, second):
         pass
 
 class BatchLoop(object):
