@@ -140,6 +140,7 @@ class Trainer(object):
         self.init_loss_accu()
         start = time.time()
         for e in range(self.n_epoch):
+            self.output_epoch(e)
             self.training(optimizer, model, x_train, y_train)
             accu = self.test(model, x_test, y_test)
         self.output_time(time.time() - start)
@@ -184,6 +185,9 @@ class Trainer(object):
         serializers.save_npz('mlp.model', model)
         serializers.save_npz('mlp.state', optimizer)
 
+    def output_epoch(self, epoch):
+        print('epoch: {}'.format(epoch))
+
     def output_time(self, second):
         print('#total elapsed time {:.1f} minitues'.format(second/60))
 
@@ -204,6 +208,9 @@ class TrainerQuiet(Trainer):
         pass
 
     def output_save_model(self):
+        pass
+
+    def output_epoch(self, epoch):
         pass
 
     def output_time(self, second):
