@@ -139,12 +139,18 @@ class Trainer(object):
         self.output_parameters()
         self.init_loss_accu()
         start = time.time()
+        best_score = -1
+        best_epoch = -1
         for e in range(self.n_epoch):
             self.output_epoch(e)
             self.training(optimizer, model, x_train, y_train)
             accu = self.test(model, x_test, y_test)
+            if accu > best_score:
+                best_score = accu
+                best_epoch = e
+                self.save_model_state(model, optimizer)
         self.output_time(time.time() - start)
-        self.save_model_state(model, optimizer)
+        self.output_score(best_epoch, best_score)
 
     def load_model(self, model):
         if 'initmodel' in self._args and self._args.initmodel:
@@ -191,6 +197,9 @@ class Trainer(object):
     def output_time(self, second):
         print('#total elapsed time {:.1f} minitues'.format(second/60))
 
+    def output_score(self, epoch, score):
+        print('#best test accuracy = {} at epoch: {}'.format(score, epoch))
+
     def output_save_model(self):
         print('save the model and state')
 
@@ -214,6 +223,9 @@ class TrainerQuiet(Trainer):
         pass
 
     def output_time(self, second):
+        pass
+
+    def output_score(self, epoch, score):
         pass
 
 class BatchLoop(object):
