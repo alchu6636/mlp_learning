@@ -18,9 +18,22 @@ class MlpNet(ChainList):
         for (a, b) in zip(units[:-1], units[1:]):
             self.add_link(L.Linear(a, b))
         self._dropout = False
+        self._train = False
 
     def set_dropout(self, dropout):
         self._dropout = dropout
+
+    def train_mode(self, flag=True):
+        self._train = flag
+
+    def dropout(self):
+        return self._dropout and self._train
+
+    def drop_ratio(self, index):
+        if index == 0:
+            return 0.2
+        else:
+            return 0.5
 
     def layer_size(self):
         return len(self)
@@ -45,8 +58,9 @@ class MlpNet(ChainList):
     def __call__(self, input): # forward
         h = input
         for i in range(self.layer_size()-1):
-            h = F.relu(self[i](h))
-#            h = F.dropout(F.relu(self[i](h)), train= not input.volatile)
+            h = F.dropout(F.relu(self[i](h)),
+                          train = self.dropout(),
+                          ratio = self.drop_ratio(i))
         return self[-1](h)
 
     def output_parameters(self):
@@ -128,7 +142,9 @@ class Trainer(object):
         best_epoch = -1
         for e in range(self.n_epoch):
             self.output_epoch(e)
+            self.mlp.train_mode(True)
             self.training(optimizer, model, x_train, y_train)
+            self.mlp.train_mode(False)
             accu = self.test(model, x_test, y_test)
             if accu > best_score:
                 best_score = accu
