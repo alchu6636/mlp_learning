@@ -19,6 +19,9 @@ class MlpNet(ChainList):
             self.add_link(L.Linear(a, b))
         self._dropout = False
 
+    def set_dropout(self, dropout):
+        self._dropout = dropout
+
     def layer_size(self):
         return len(self)
 
@@ -45,6 +48,14 @@ class MlpNet(ChainList):
             h = F.relu(self[i](h))
 #            h = F.dropout(F.relu(self[i](h)), train= not input.volatile)
         return self[-1](h)
+
+    def output_parameters(self):
+        print('#layer:{}'.format(self.units()))
+        print('#number of parameters:{}'.format(self.nparam()))
+        print('#dropout:{}'.format(self._dropout))
+        #print('#total W:{}'.format(self.n_parameter_w()))
+        #print('#total b:{}'.format(self.n_parameter_b()))
+
 
 class MnistData(object):
     def __init__(self):
@@ -87,16 +98,12 @@ class Trainer(object):
         self.n_batch = batch
 
     def output_parameters(self):
-        print('#layer:{}'.format(self.mlp.units()))
-        print('#number of parameters:{}'.format(self.mlp.nparam()))
-        #print('#total W:{}'.format(self.mlp.n_parameter_w()))
-        #print('#total b:{}'.format(self.mlp.n_parameter_b()))
+        self.mlp.output_parameters()
         print('#epoch:{}'.format(self.n_epoch))
         print('#training data size:{}'.format(self.n_training))
         #print('#validation data:{}'.format("0"))
         print('#test data size:{}'.format(self.n_test))
         print('#batch size:{}'.format(self.n_batch))
-        #print('#dropout:{}'.format("No"))
 
     def get_model(self, mlp):
         model = chainer.links.Classifier(mlp)
@@ -256,6 +263,8 @@ def get_args():
                         help='training data size')
     parser.add_argument('--testsize', type=int, default=10000,
                         help='test data size')
+    parser.add_argument('--dropout', action='store_true',
+                        help='using dropout')
     args = parser.parse_args()
     if not args.unit:
         args.unit = [112,112]
@@ -273,4 +282,5 @@ if __name__ == '__main__':
     trainer.setup(epoch = args.epoch, batch = args.batchsize, 
                   training = args.trainingsize, test = args.testsize)
     trainer.mlp = MlpNet(make_units(dataset, args.unit))
+    trainer.mlp.set_dropout(args.dropout)
     trainer.learn()
