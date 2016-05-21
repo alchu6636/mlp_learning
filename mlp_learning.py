@@ -86,12 +86,6 @@ class Trainer(object):
         self.n_test = test
         self.n_batch = batch
 
-    def create_mlp(self, hidden_nunits):
-        l0 = self._data.x_dimension()
-        lz = self._data.y_range()
-        self.mlp = MlpNet([l0] + hidden_nunits + [lz])
-        return self.mlp
-
     def output_parameters(self):
         print('#layer:{}'.format(self.mlp.units()))
         print('#number of parameters:{}'.format(self.mlp.nparam()))
@@ -103,13 +97,6 @@ class Trainer(object):
         print('#test data size:{}'.format(self.n_test))
         print('#batch size:{}'.format(self.n_batch))
         #print('#dropout:{}'.format("No"))
-
-    def get_mlp(self, units=None):
-        if units:
-            mlp = self.create_mlp(units)
-        else:
-            mlp = self.create_mlp([112,112])
-        return mlp
 
     def get_model(self, mlp):
         model = chainer.links.Classifier(mlp)
@@ -123,18 +110,9 @@ class Trainer(object):
         return optimizer
 
     def learn(self):
-        args = self._args
-        if args:
-            self.setup(
-                epoch = args.epoch, batch = args.batchsize, 
-                training = args.trainingsize, test = args.testsize)
-            mlp = self.get_mlp(args.unit)
-        else:
-            mlp = self.get_mlp()
-
         x_train, y_train = self._data.take(self.n_training)
         x_test, y_test = self._data.take(self.n_test)
-        model = self.get_model(mlp)
+        model = self.get_model(self.mlp)
         optimizer = self.get_optimizer(model)
         self.output_parameters()
         self.init_loss_accu()
@@ -278,10 +256,21 @@ def get_args():
                         help='training data size')
     parser.add_argument('--testsize', type=int, default=10000,
                         help='test data size')
-    return parser.parse_args()
+    args = parser.parse_args()
+    if not args.unit:
+        args.unit = [112,112]
+    return args
+
+def make_units(data, hidden_unit=[112,112]):
+        l0 = data.x_dimension()
+        lz = data.y_range()
+        return [l0] + hidden_unit + [lz]
 
 if __name__ == '__main__':
-    main_args = get_args()
+    args = get_args()
     dataset = MnistData()
-    trainer = Trainer(dataset, main_args)
+    trainer = Trainer(dataset, args)
+    trainer.setup(epoch = args.epoch, batch = args.batchsize, 
+                  training = args.trainingsize, test = args.testsize)
+    trainer.mlp = MlpNet(make_units(dataset, args.unit))
     trainer.learn()
